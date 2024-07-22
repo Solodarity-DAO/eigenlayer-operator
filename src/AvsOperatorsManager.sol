@@ -40,25 +40,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
     }
 
     /**
-     * @notice Update the ECDSA signer address for a specific AVS Operator.
-     * @param _id The ID of the AVS Operator.
-     * @param _ecdsaSigner The new ECDSA signer address.
-     */
-    function updateEcdsaSigner(uint256 _id, address _ecdsaSigner) external onlyAdmin {
-        avsOperators[_id].updateEcdsaSigner(_ecdsaSigner);
-        emit UpdatedEcdsaSigner(_id, _ecdsaSigner);
-    }
-
-    /**
-     * @notice Update the admin status of an address.
-     * @param _address The address to update.
-     * @param _isAdmin Whether the address should be an admin or not.
-     */
-    function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
-        admins[_address] = _isAdmin;
-    }
-
-    /**
      * @notice Create a new AVS Operator.
      * @return _id The ID of the newly created AVS Operator.
      */
@@ -80,6 +61,25 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
      */
     function upgradeAvsOperator(address _newImplementation) external onlyOwner {
         upgradableBeacon.upgradeTo(_newImplementation);
+    }
+
+    /**
+     * @notice Update the ECDSA signer address for a specific AVS Operator.
+     * @param _id The ID of the AVS Operator.
+     * @param _ecdsaSigner The new ECDSA signer address.
+     */
+    function updateEcdsaSigner(uint256 _id, address _ecdsaSigner) external onlyAdmin {
+        avsOperators[_id].updateEcdsaSigner(_ecdsaSigner);
+        emit UpdatedEcdsaSigner(_id, _ecdsaSigner);
+    }
+
+    /**
+     * @notice Update the admin status of an address.
+     * @param _address The address to update.
+     * @param _isAdmin Whether the address should be an admin or not.
+     */
+    function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
+        admins[_address] = _isAdmin;
     }
 
     /**
