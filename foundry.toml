@@ -7,3 +7,12 @@ libs = ["lib"]
 out = "out"
 solc = "0.8.26"
 src = "src"
+
+[rpc_endpoints]
+anvil = "${RPC_URL_ANVIL}"
+holesky = "${RPC_URL_HOLESKY}"
+mainnet = "${RPC_URL_MAINNET}"
+
+[etherscan]
+holesky = { key = "${ETHERSCAN_API_KEY}" }
+mainnet = { key = "${ETHERSCAN_API_KEY}" }
