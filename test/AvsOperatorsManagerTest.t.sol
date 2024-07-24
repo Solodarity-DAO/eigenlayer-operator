@@ -5,8 +5,8 @@ import {console, Test} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
-import "../src/AvsOperator.sol";
-import "../src/AvsOperatorsManager.sol";
+import {AvsOperator} from "../src/AvsOperator.sol";
+import {AvsOperatorsManager, OwnableUpgradeable} from "../src/AvsOperatorsManager.sol";
 
 contract AvsOperatorsManagerTest is Test {
     AvsOperatorsManager operatorsManager;

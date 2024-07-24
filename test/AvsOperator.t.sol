@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import "forge-std/Test.sol";
-import "forge-std/Vm.sol";
-import "../src/AvsOperator.sol";
+import {console, Test} from "forge-std/Test.sol";
+import {VmSafe} from "forge-std/Vm.sol";
+
+import {AvsOperator} from "../src/AvsOperator.sol";
 
 contract SolidarityAvsOperatorTest is Test {
     AvsOperator avsOperator;

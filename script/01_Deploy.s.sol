@@ -4,8 +4,8 @@ pragma solidity ^0.8.26;
 import {console, Script} from "forge-std/Script.sol";
 import {Upgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
-import "../src/AvsOperator.sol";
-import "../src/AvsOperatorsManager.sol";
+import {AvsOperator} from "../src/AvsOperator.sol";
+import {AvsOperatorsManager} from "../src/AvsOperatorsManager.sol";
 
 contract DeployScript is Script {
     function run() external {
