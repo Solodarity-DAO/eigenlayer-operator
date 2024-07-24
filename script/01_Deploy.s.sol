@@ -15,10 +15,11 @@ contract DeployScript is Script {
         address proxy = Upgrades.deployUUPSProxy(
             "AvsOperatorsManager.sol", abi.encodeCall(AvsOperatorsManager.initialize, (address(avsOperator)))
         );
-        console.log("uups proxy -> %s", proxy);
+        console.log("AvsOperatorsManager Proxy: %s", proxy);
 
         AvsOperatorsManager operatorsManager = AvsOperatorsManager(proxy);
         uint256 operatorId = operatorsManager.createAvsOperator();
+        console.log("AvsOperator Proxy: %s", address(operatorsManager.avsOperators(operatorId)));
 
         address ecdsaSignerAddress = vm.envAddress("ECDSA_SIGNER_ADDRESS");
         operatorsManager.updateEcdsaSigner(operatorId, ecdsaSignerAddress);
