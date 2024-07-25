@@ -16,3 +16,6 @@ mainnet = "${RPC_URL_MAINNET}"
 [etherscan]
 holesky = { key = "${ETHERSCAN_API_KEY}" }
 mainnet = { key = "${ETHERSCAN_API_KEY}" }
+
+[fmt]
+sort_imports = true
