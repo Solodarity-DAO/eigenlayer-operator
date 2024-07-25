@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {console, Test} from "forge-std/Test.sol";
+import {Test, console} from "forge-std/Test.sol";
 import {VmSafe} from "forge-std/Vm.sol";
 
 import {AvsOperator} from "../src/AvsOperator.sol";
