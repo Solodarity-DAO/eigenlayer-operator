@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
+import {IDelegationManager} from "@eigenlayer/interfaces/IDelegationManager.sol";
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
@@ -23,6 +24,47 @@ contract AvsOperator is IERC1271, IBeacon {
         if (avsOperatorsManager != address(0)) revert AlreadyInitialized();
         if (_avsOperatorsManager == address(0)) revert InvalidAddress();
         avsOperatorsManager = _avsOperatorsManager;
+    }
+
+    /**
+     * @notice Registers this contract as an operator in the Delegation Manager.
+     * @dev Callable only by the manager.
+     * @param _delegationManager The Delegation Manager contract address.
+     * @param _detail Operator details.
+     * @param _metaDataURI URI for operator metadata.
+     */
+    function registerAsOperator(
+        IDelegationManager _delegationManager,
+        IDelegationManager.OperatorDetails calldata _detail,
+        string calldata _metaDataURI
+    ) external managerOnly {
+        _delegationManager.registerAsOperator(_detail, _metaDataURI);
+    }
+
+    /**
+     * @notice Modifies the operator details of this contract in the Delegation Manager.
+     * @dev Callable only by the manager.
+     * @param _delegationManager The Delegation Manager contract address.
+     * @param _newOperatorDetails New operator details.
+     */
+    function modifyOperatorDetails(
+        IDelegationManager _delegationManager,
+        IDelegationManager.OperatorDetails calldata _newOperatorDetails
+    ) external managerOnly {
+        _delegationManager.modifyOperatorDetails(_newOperatorDetails);
+    }
+
+    /**
+     * @notice Updates the metadata URI of this contract as an operator in the Delegation Manager.
+     * @dev Callable only by the manager.
+     * @param _delegationManager The Delegation Manager contract address.
+     * @param _metadataURI New metadata URI.
+     */
+    function updateOperatorMetadataURI(IDelegationManager _delegationManager, string calldata _metadataURI)
+        external
+        managerOnly
+    {
+        _delegationManager.updateOperatorMetadataURI(_metadataURI);
     }
 
     /**
