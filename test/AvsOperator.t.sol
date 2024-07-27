@@ -6,7 +6,7 @@ import {VmSafe} from "forge-std/Vm.sol";
 
 import {AvsOperator} from "../src/AvsOperator.sol";
 
-contract SolidarityAvsOperatorTest is Test {
+contract AvsOperatorTest is Test {
     AvsOperator avsOperator;
     VmSafe.Wallet avsOperatorsManager;
     VmSafe.Wallet ecdsaSigner;
