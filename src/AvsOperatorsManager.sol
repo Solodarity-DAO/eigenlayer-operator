@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.26;
 
-import {IDelegationManager} from "@eigenlayer/contracts/interfaces/IDelegationManager.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
+
+import {IBLSApkRegistry} from "./eigenlayer-interfaces/IBLSApkRegistry.sol";
+import {IDelegationManager} from "./eigenlayer-interfaces/IDelegationManager.sol";
+import {IRegistryCoordinator} from "./eigenlayer-interfaces/IRegistryCoordinator.sol";
+import {ISignatureUtils} from "./eigenlayer-interfaces/ISignatureUtils.sol";
 
 import {AvsOperator} from "./AvsOperator.sol";
 
@@ -22,22 +26,38 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
     mapping(address => bool) public admins;
 
     error NotAdmin();
+    error NotOperator();
 
     event CreatedAvsOperator(uint256 indexed id, address avsOperator);
+    event DeregisteredOperator(uint256 indexed id, address avsServiceManager, bytes quorumNumbers);
     event ModifiedOperatorDetails(uint256 indexed id, IDelegationManager.OperatorDetails newOperatorDetails);
     event RegisteredAsOperator(uint256 indexed id, IDelegationManager.OperatorDetails detail);
+    event RegisteredOperator(
+        uint256 indexed id,
+        address avsServiceManager,
+        bytes quorumNumbers,
+        string socket,
+        IBLSApkRegistry.PubkeyRegistrationParams params,
+        ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
+    );
+    event RegisteredBlsKeyAsDelegatedNodeOperator(
+        uint256 indexed id,
+        address avsServiceManager,
+        bytes quorumNumbers,
+        string socket,
+        IBLSApkRegistry.PubkeyRegistrationParams params
+    );
+    event UpdatedAvsNodeRunner(uint256 indexed id, address avsNodeRunner);
+    event UpdatedAvsWhitelist(uint256 indexed id, address avsServiceManager, bool isWhitelisted);
     event UpdatedEcdsaSigner(uint256 indexed id, address ecdsaSigner);
     event UpdatedOperatorMetadataURI(uint256 indexed id, string metadataURI);
+    event UpdatedSocket(uint256 indexed id, address avsServiceManager, string socket);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }
 
-    /**
-     * @notice Initialize the contract with the address of the AVS Operator implementation.
-     * @param _avsOperatorImpl The address of the AVS Operator implementation contract.
-     */
     function initialize(address _delegationManager, address _avsOperatorImpl) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
@@ -47,10 +67,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, msg.sender);
     }
 
-    /**
-     * @notice Create a new AVS Operator.
-     * @return _id The ID of the newly created AVS Operator.
-     */
     function createAvsOperator() external onlyOwner returns (uint256 _id) {
         _id = nextAvsOperatorId++;
 
@@ -63,21 +79,85 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         return _id;
     }
 
-    /**
-     * @notice Upgrade the AVS Operator implementation to a new address.
-     * @param _newImplementation The address of the new implementation contract.
-     */
     function upgradeAvsOperator(address _newImplementation) external onlyOwner {
         upgradableBeacon.upgradeTo(_newImplementation);
     }
 
-    /**
-     * @notice Registers the operator with the given details and metadata URI.
-     * @dev Can only be called by the contract owner.
-     * @param _id The identifier for the operator.
-     * @param _detail The operator's details.
-     * @param _metaDataURI The URI pointing to the operator's metadata.
-     */
+    function registerBlsKeyAsDelegatedNodeOperator(
+        uint256 _id,
+        address _avsRegistryCoordinator,
+        bytes calldata _quorumNumbers,
+        string calldata _socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata _params
+    ) external onlyOperator(_id) {
+        avsOperators[_id].registerBlsKeyAsDelegatedNodeOperator(
+            _avsRegistryCoordinator, _quorumNumbers, _socket, _params
+        );
+
+        emit RegisteredBlsKeyAsDelegatedNodeOperator(_id, _avsRegistryCoordinator, _quorumNumbers, _socket, _params);
+    }
+
+    // we got angry with {gnosis, etherscan} to deal with the tuple type
+    function registerOperator(
+        uint256 _id,
+        address _avsRegistryCoordinator,
+        bytes calldata _signature,
+        bytes32 _salt,
+        uint256 _expiry
+    ) external onlyOperator(_id) {
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature =
+            ISignatureUtils.SignatureWithSaltAndExpiry(_signature, _salt, _expiry);
+        return registerOperator(_id, _avsRegistryCoordinator, _operatorSignature);
+    }
+
+    function registerOperator(
+        uint256 _id,
+        address _avsRegistryCoordinator,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+    ) public onlyOperator(_id) {
+        AvsOperator.AvsInfo memory avsInfo = avsOperators[_id].getAvsInfo(_avsRegistryCoordinator);
+        avsOperators[_id].registerOperator(_avsRegistryCoordinator, _operatorSignature);
+
+        emit RegisteredOperator(
+            _id, _avsRegistryCoordinator, avsInfo.quorumNumbers, avsInfo.socket, avsInfo.params, _operatorSignature
+        );
+    }
+
+    function registerOperatorWithChurn(
+        uint256 _id,
+        address _avsRegistryCoordinator,
+        IRegistryCoordinator.OperatorKickParam[] calldata _operatorKickParams,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _churnApproverSignature,
+        ISignatureUtils.SignatureWithSaltAndExpiry memory _operatorSignature
+    ) external onlyOperator(_id) {
+        AvsOperator.AvsInfo memory avsInfo = avsOperators[_id].getAvsInfo(_avsRegistryCoordinator);
+        avsOperators[_id].registerOperatorWithChurn(
+            _avsRegistryCoordinator, _operatorKickParams, _churnApproverSignature, _operatorSignature
+        );
+
+        emit RegisteredOperator(
+            _id, _avsRegistryCoordinator, avsInfo.quorumNumbers, avsInfo.socket, avsInfo.params, _operatorSignature
+        );
+    }
+
+    function deregisterOperator(uint256 _id, address _avsRegistryCoordinator, bytes calldata quorumNumbers)
+        external
+        onlyOperator(_id)
+    {
+        avsOperators[_id].deregisterOperator(_avsRegistryCoordinator, quorumNumbers);
+
+        emit DeregisteredOperator(_id, _avsRegistryCoordinator, quorumNumbers);
+    }
+
+    function updateSocket(uint256 _id, address _avsRegistryCoordinator, string memory _socket)
+        external
+        onlyOperator(_id)
+    {
+        avsOperators[_id].updateSocket(_avsRegistryCoordinator, _socket);
+
+        emit UpdatedSocket(_id, _avsRegistryCoordinator, _socket);
+    }
+
     function registerAsOperator(
         uint256 _id,
         IDelegationManager.OperatorDetails calldata _detail,
@@ -88,12 +168,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         emit RegisteredAsOperator(_id, _detail);
     }
 
-    /**
-     * @notice Modifies the operator details for the given operator ID.
-     * @dev Can only be called by an admin.
-     * @param _id The identifier for the operator.
-     * @param _newOperatorDetails The new details for the operator.
-     */
     function modifyOperatorDetails(uint256 _id, IDelegationManager.OperatorDetails calldata _newOperatorDetails)
         external
         onlyAdmin
@@ -103,54 +177,77 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         emit ModifiedOperatorDetails(_id, _newOperatorDetails);
     }
 
-    /**
-     * @notice Updates the metadata URI for the given operator ID.
-     * @dev Can only be called by an admin.
-     * @param _id The identifier for the operator.
-     * @param _metadataURI The new metadata URI for the operator.
-     */
     function updateOperatorMetadataURI(uint256 _id, string calldata _metadataURI) external onlyAdmin {
         avsOperators[_id].updateOperatorMetadataURI(delegationManager, _metadataURI);
 
         emit UpdatedOperatorMetadataURI(_id, _metadataURI);
     }
 
-    /**
-     * @notice Update the ECDSA signer address for a specific AVS Operator.
-     * @param _id The ID of the AVS Operator.
-     * @param _ecdsaSigner The new ECDSA signer address.
-     */
+    function updateAvsNodeRunner(uint256 _id, address _avsNodeRunner) external onlyAdmin {
+        avsOperators[_id].updateAvsNodeRunner(_avsNodeRunner);
+
+        emit UpdatedAvsNodeRunner(_id, _avsNodeRunner);
+    }
+
+    function updateAvsWhitelist(uint256 _id, address _avsRegistryCoordinator, bool _isWhitelisted) external onlyAdmin {
+        avsOperators[_id].updateAvsWhitelist(_avsRegistryCoordinator, _isWhitelisted);
+
+        emit UpdatedAvsWhitelist(_id, _avsRegistryCoordinator, _isWhitelisted);
+    }
+
     function updateEcdsaSigner(uint256 _id, address _ecdsaSigner) external onlyAdmin {
         avsOperators[_id].updateEcdsaSigner(_ecdsaSigner);
 
         emit UpdatedEcdsaSigner(_id, _ecdsaSigner);
     }
 
-    /**
-     * @notice Update the admin status of an address.
-     * @param _address The address to update.
-     * @param _isAdmin Whether the address should be an admin or not.
-     */
     function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
         admins[_address] = _isAdmin;
     }
 
-    /**
-     * @dev Authorize the upgrade of the contract. Only the owner can authorize upgrades.
-     * @param newImplementation The address of the new implementation contract.
-     */
+    function getAvsInfo(uint256 _id, address _avsRegistryCoordinator)
+        external
+        view
+        returns (AvsOperator.AvsInfo memory)
+    {
+        return avsOperators[_id].getAvsInfo(_avsRegistryCoordinator);
+    }
+
+    function isAvsWhitelisted(uint256 _id, address _avsRegistryCoordinator) external view returns (bool) {
+        return avsOperators[_id].isAvsWhitelisted(_avsRegistryCoordinator);
+    }
+
+    function isAvsRegistered(uint256 _id, address _avsRegistryCoordinator) external view returns (bool) {
+        return avsOperators[_id].isAvsRegistered(_avsRegistryCoordinator);
+    }
+
+    function isRegisteredBlsKey(
+        uint256 _id,
+        address _avsRegistryCoordinator,
+        bytes calldata _quorumNumbers,
+        string calldata _socket,
+        IBLSApkRegistry.PubkeyRegistrationParams calldata _params
+    ) external view returns (bool) {
+        return avsOperators[_id].isRegisteredBlsKey(_avsRegistryCoordinator, _quorumNumbers, _socket, _params);
+    }
+
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
-    /**
-     * @dev Internal function to check if the caller is an admin.
-     */
+    function _onlyOperator(uint256 _id) internal view {
+        if (msg.sender != avsOperators[_id].avsNodeRunner() && !admins[msg.sender] && msg.sender != owner()) {
+            revert NotOperator();
+        }
+    }
+
+    modifier onlyOperator(uint256 _id) {
+        _onlyOperator(_id);
+        _;
+    }
+
     function _onlyAdmin() internal view {
         if (!admins[msg.sender] && msg.sender != owner()) revert NotAdmin();
     }
 
-    /**
-     * @dev Modifier to allow only admins to call a function.
-     */
     modifier onlyAdmin() {
         _onlyAdmin();
         _;
