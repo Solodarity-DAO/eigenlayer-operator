@@ -22,7 +22,7 @@ contract RegisterOperatorScript is Script {
             stakerOptOutWindowBlocks: 0
         });
         string memory metaDataURI =
-            "https://raw.githubusercontent.com/solidarity-dao/eigenlayer-operator/main/operator/metadata.json";
+            "https://raw.githubusercontent.com/klassicd/eigenlayer-operator/main/operator/metadata.json";
 
         operatorsManager.registerAsOperator(operatorId, operatorDetails, metaDataURI);
 
