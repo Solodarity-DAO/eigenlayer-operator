@@ -3,9 +3,8 @@ pragma solidity ^0.8.26;
 
 import {Script} from "forge-std/Script.sol";
 
-import {IDelegationManager} from "../src/eigenlayer-interfaces/IDelegationManager.sol";
-
 import {AvsOperatorsManager} from "../src/AvsOperatorsManager.sol";
+import {IDelegationManager} from "../src/eigenlayer-interfaces/IDelegationManager.sol";
 
 contract RegisterOperatorScript is Script {
     function run() external {

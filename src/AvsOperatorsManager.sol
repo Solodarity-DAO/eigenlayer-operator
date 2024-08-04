@@ -7,12 +7,11 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol";
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
+import {AvsOperator} from "./AvsOperator.sol";
 import {IBLSApkRegistry} from "./eigenlayer-interfaces/IBLSApkRegistry.sol";
 import {IDelegationManager} from "./eigenlayer-interfaces/IDelegationManager.sol";
 import {IRegistryCoordinator} from "./eigenlayer-interfaces/IRegistryCoordinator.sol";
 import {ISignatureUtils} from "./eigenlayer-interfaces/ISignatureUtils.sol";
-
-import {AvsOperator} from "./AvsOperator.sol";
 
 /// @notice This contract was forked from the EtherFi Protocol.
 /// @dev Original: https://github.com/etherfi-protocol/smart-contracts/blob/syko/feature/etherfi_avs_operator/src/EtherFiAvsOperatorsManager.sol
