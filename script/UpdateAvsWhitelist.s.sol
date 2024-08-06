@@ -12,7 +12,7 @@ contract UpdateAvsWhitelistScript is Script {
         address avsOperatorsManagerAddress = vm.envAddress("AVS_OPERATORS_MANAGER_ADDRESS");
         AvsOperatorsManager avsOperatorsManager = AvsOperatorsManager(avsOperatorsManagerAddress);
 
-        address avsRegistryCoordinatorAddress = vm.envAddress("REGISTRY_COORDINATOR_ADDRESS");
+        address avsRegistryCoordinatorAddress = vm.envAddress("EIGENDA_REGISTRY_COORDINATOR_ADDRESS");
         uint256 operatorId = vm.promptUint("Enter operator ID: ");
         avsOperatorsManager.updateAvsWhitelist(operatorId, avsRegistryCoordinatorAddress, true);
 

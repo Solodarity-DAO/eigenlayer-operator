@@ -12,10 +12,13 @@ contract DeployScript is Script {
         vm.startBroadcast();
 
         AvsOperator avsOperator = new AvsOperator();
-        address delegationManagerAddress = vm.envAddress("DELEGATION_MANAGER_ADDRESS");
+        address delegationManagerAddress = vm.envAddress("EIGENLAYER_DELEGATION_MANAGER_ADDRESS");
+        address avsDirectoryAddress = vm.envAddress("EIGENLAYER_AVS_DIRECTORY_ADDRESS");
         address proxy = Upgrades.deployUUPSProxy(
             "AvsOperatorsManager.sol",
-            abi.encodeCall(AvsOperatorsManager.initialize, (delegationManagerAddress, address(avsOperator)))
+            abi.encodeCall(
+                AvsOperatorsManager.initialize, (delegationManagerAddress, avsDirectoryAddress, address(avsOperator))
+            )
         );
         console.log("AvsOperatorsManager Proxy: %s", proxy);
 
