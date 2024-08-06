@@ -8,6 +8,7 @@ import {BeaconProxy} from "@openzeppelin/contracts/proxy/beacon/BeaconProxy.sol"
 import {UpgradeableBeacon} from "@openzeppelin/contracts/proxy/beacon/UpgradeableBeacon.sol";
 
 import {AvsOperator} from "./AvsOperator.sol";
+import {IAVSDirectory} from "./eigenlayer-interfaces/IAVSDirectory.sol";
 import {IBLSApkRegistry} from "./eigenlayer-interfaces/IBLSApkRegistry.sol";
 import {IDelegationManager} from "./eigenlayer-interfaces/IDelegationManager.sol";
 import {IRegistryCoordinator} from "./eigenlayer-interfaces/IRegistryCoordinator.sol";
@@ -23,6 +24,8 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
 
     mapping(uint256 => AvsOperator) public avsOperators;
     mapping(address => bool) public admins;
+
+    IAVSDirectory public avsDirectory;
 
     error NotAdmin();
     error NotOperator();
@@ -57,13 +60,21 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         _disableInitializers();
     }
 
-    function initialize(address _delegationManager, address _avsOperatorImpl) external initializer {
+    function initialize(address _delegationManager, address _avsDirectory, address _avsOperatorImpl)
+        external
+        initializer
+    {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
 
         nextAvsOperatorId = 1;
+        avsDirectory = IAVSDirectory(_avsDirectory);
         delegationManager = IDelegationManager(_delegationManager);
         upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, msg.sender);
+    }
+
+    function initializeAvsDirectory(address _avsDirectory) external onlyOwner {
+        avsDirectory = IAVSDirectory(_avsDirectory);
     }
 
     function createAvsOperator() external onlyOwner returns (uint256 _id) {
@@ -202,6 +213,24 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
 
     function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
         admins[_address] = _isAdmin;
+    }
+
+    function calculateOperatorAVSRegistrationDigestHash(
+        uint256 _id,
+        address _avsServiceManager,
+        bytes32 _salt,
+        uint256 _expiry
+    ) external view returns (bytes32) {
+        address _operator = address(avsOperators[_id]);
+        return avsDirectory.calculateOperatorAVSRegistrationDigestHash(_operator, _avsServiceManager, _salt, _expiry);
+    }
+
+    function avsOperatorStatus(uint256 _id, address _avsServiceManager)
+        external
+        view
+        returns (IAVSDirectory.OperatorAVSRegistrationStatus)
+    {
+        return avsDirectory.avsOperatorStatus(_avsServiceManager, address(avsOperators[_id]));
     }
 
     function getAvsInfo(uint256 _id, address _avsRegistryCoordinator)

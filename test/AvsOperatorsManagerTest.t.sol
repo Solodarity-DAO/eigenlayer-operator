@@ -14,9 +14,13 @@ contract AvsOperatorsManagerTest is Test {
     function setUp() public {
         AvsOperator avsOperator = new AvsOperator();
 
+        address delegationManagerAddress = address(0);
+        address avsDirectoryAddress = address(0);
         address proxy = Upgrades.deployUUPSProxy(
             "AvsOperatorsManager.sol",
-            abi.encodeCall(AvsOperatorsManager.initialize, (address(0), address(avsOperator)))
+            abi.encodeCall(
+                AvsOperatorsManager.initialize, (delegationManagerAddress, avsDirectoryAddress, address(avsOperator))
+            )
         );
 
         console.log("uups proxy -> %s", proxy);
