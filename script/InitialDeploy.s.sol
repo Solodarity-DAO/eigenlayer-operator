@@ -25,6 +25,7 @@ contract DeployScript is Script {
         AvsOperatorsManager operatorsManager = AvsOperatorsManager(proxy);
         uint256 operatorId = operatorsManager.createAvsOperator();
         console.log("AvsOperator Proxy: %s", address(operatorsManager.avsOperators(operatorId)));
+        console.log("Internal AvsOperator ID: %s", operatorId);
 
         address ecdsaSignerAddress = vm.envAddress("ECDSA_SIGNER_ADDRESS");
         operatorsManager.updateEcdsaSigner(operatorId, ecdsaSignerAddress);
