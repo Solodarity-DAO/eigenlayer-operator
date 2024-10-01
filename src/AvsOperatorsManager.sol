@@ -73,10 +73,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, address(this));
     }
 
-    function initializeAvsDirectory(address _avsDirectory) external onlyOwner {
-        avsDirectory = IAVSDirectory(_avsDirectory);
-    }
-
     function createAvsOperator() external onlyOwner returns (uint256 _id) {
         _id = nextAvsOperatorId++;
 
@@ -157,6 +153,13 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         avsOperators[_id].deregisterOperator(_avsRegistryCoordinator, quorumNumbers);
 
         emit DeregisteredOperator(_id, _avsRegistryCoordinator, quorumNumbers);
+    }
+
+    function registerEigenAllocationWallet(uint256 _id, address _registry, address _wallet) external onlyOwner {
+        string memory message =
+            "I agree to have my operator EIGEN allocation be claimed from the registered wallet in this transaction.";
+        bytes memory data = abi.encodeWithSignature("Register(address,string)", _wallet, message);
+        avsOperators[_id].forwardCall(_registry, data);
     }
 
     function updateSocket(uint256 _id, address _avsRegistryCoordinator, string memory _socket)
