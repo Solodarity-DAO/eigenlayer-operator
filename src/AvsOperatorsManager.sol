@@ -70,7 +70,7 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, UUPSUpgradeab
         nextAvsOperatorId = 1;
         avsDirectory = IAVSDirectory(_avsDirectory);
         delegationManager = IDelegationManager(_delegationManager);
-        upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, msg.sender);
+        upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, address(this));
     }
 
     function initializeAvsDirectory(address _avsDirectory) external onlyOwner {
