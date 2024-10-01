@@ -3,6 +3,7 @@ pragma solidity ^0.8.26;
 
 import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IBeacon} from "@openzeppelin/contracts/proxy/beacon/IBeacon.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 
 import {IBLSApkRegistry} from "./eigenlayer-interfaces/IBLSApkRegistry.sol";
@@ -129,6 +130,10 @@ contract AvsOperator is IERC1271, IBeacon {
         delete avsInfos[_avsRegistryCoordinator];
 
         IRegistryCoordinator(_avsRegistryCoordinator).deregisterOperator(quorumNumbers);
+    }
+
+    function forwardCall(address to, bytes calldata data) external managerOnly returns (bytes memory) {
+        return Address.functionCall(to, data);
     }
 
     function updateAvsNodeRunner(address _avsNodeRunner) external managerOnly {
