@@ -13,19 +13,13 @@ contract UpgradeAvsOperatorsManagerScript is Script {
         vm.startBroadcast();
 
         address avsOperatorsManagerAddress = vm.envAddress("AVS_OPERATORS_MANAGER_ADDRESS");
-        address avsDirectoryAddress = vm.envAddress("EIGENLAYER_AVS_DIRECTORY_ADDRESS");
 
-        // To upgrade we need the current contract available, and renamed, for safety checks.
+        // To upgrade we need the previous contract available, and contract renamed to match filename, for safety checks.
         Options memory opts;
-        opts.referenceContract = "AvsOperatorsManagerV1.sol";
+        opts.referenceContract = "AvsOperatorsManagerOld.sol";
 
         // Upgrades.validateUpgrade("AvsOperatorsManager.sol", opts);
-        Upgrades.upgradeProxy(
-            avsOperatorsManagerAddress,
-            "AvsOperatorsManager.sol",
-            abi.encodeCall(AvsOperatorsManager.initializeAvsDirectory, (avsDirectoryAddress)),
-            opts
-        );
+        Upgrades.upgradeProxy(avsOperatorsManagerAddress, "AvsOperatorsManager.sol", "", opts);
 
         vm.stopBroadcast();
     }
