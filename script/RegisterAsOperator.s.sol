@@ -6,7 +6,7 @@ import {Script} from "forge-std/Script.sol";
 import {AvsOperatorsManager} from "../src/AvsOperatorsManager.sol";
 import {IDelegationManager} from "../src/eigenlayer-interfaces/IDelegationManager.sol";
 
-contract RegisterOperatorScript is Script {
+contract RegisterAsOperatorScript is Script {
     function run() external {
         vm.startBroadcast();
 
