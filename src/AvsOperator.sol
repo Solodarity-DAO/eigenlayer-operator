@@ -13,7 +13,7 @@ import {ISignatureUtils} from "./eigenlayer-interfaces/ISignatureUtils.sol";
 import {BN254} from "./eigenlayer-libraries/BN254.sol";
 
 /// @notice This contract was forked from the EtherFi Protocol.
-/// @dev Original: https://github.com/etherfi-protocol/smart-contracts/blob/syko/feature/etherfi_avs_operator/src/EtherFiAvsOperator.sol
+/// @dev Original: https://github.com/etherfi-protocol/avs-smart-contracts/blob/master/src/AvsOperator.sol
 contract AvsOperator is IERC1271, IBeacon {
     // DEPRECATED
     struct AvsInfo {

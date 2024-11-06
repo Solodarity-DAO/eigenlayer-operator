@@ -16,7 +16,7 @@ import {IRegistryCoordinator} from "./eigenlayer-interfaces/IRegistryCoordinator
 import {ISignatureUtils} from "./eigenlayer-interfaces/ISignatureUtils.sol";
 
 /// @notice This contract was forked from the EtherFi Protocol.
-/// @dev Original: https://github.com/etherfi-protocol/smart-contracts/blob/syko/feature/etherfi_avs_operator/src/EtherFiAvsOperatorsManager.sol
+/// @dev Original: https://github.com/etherfi-protocol/avs-smart-contracts/blob/master/src/AvsOperatorManager.sol
 contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgradeable, UUPSUpgradeable {
     IDelegationManager public delegationManager;
     UpgradeableBeacon public upgradableBeacon;
@@ -41,32 +41,14 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
         uint256 indexed id, address indexed target, bytes4 indexed selector, bool allowed
     );
     event CreatedAvsOperator(uint256 indexed id, address avsOperator);
-    event DeregisteredOperator(uint256 indexed id, address avsServiceManager, bytes quorumNumbers);
     event ForwardedOperatorCall(
         uint256 indexed id, address indexed target, bytes4 indexed selector, bytes data, address sender
     );
     event ModifiedOperatorDetails(uint256 indexed id, IDelegationManager.OperatorDetails newOperatorDetails);
     event RegisteredAsOperator(uint256 indexed id, IDelegationManager.OperatorDetails detail);
-    event RegisteredOperator(
-        uint256 indexed id,
-        address avsServiceManager,
-        bytes quorumNumbers,
-        string socket,
-        IBLSApkRegistry.PubkeyRegistrationParams params,
-        ISignatureUtils.SignatureWithSaltAndExpiry operatorSignature
-    );
-    event RegisteredBlsKeyAsDelegatedNodeOperator(
-        uint256 indexed id,
-        address avsServiceManager,
-        bytes quorumNumbers,
-        string socket,
-        IBLSApkRegistry.PubkeyRegistrationParams params
-    );
     event UpdatedAvsNodeRunner(uint256 indexed id, address avsNodeRunner);
-    event UpdatedAvsWhitelist(uint256 indexed id, address avsServiceManager, bool isWhitelisted);
     event UpdatedEcdsaSigner(uint256 indexed id, address ecdsaSigner);
     event UpdatedOperatorMetadataURI(uint256 indexed id, string metadataURI);
-    event UpdatedSocket(uint256 indexed id, address avsServiceManager, string socket);
 
     /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
