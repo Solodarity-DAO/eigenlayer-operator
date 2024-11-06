@@ -69,22 +69,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
         upgradableBeacon = new UpgradeableBeacon(_avsOperatorImpl, address(this));
     }
 
-    function createAvsOperator() external onlyOwner returns (uint256 _id) {
-        _id = nextAvsOperatorId++;
-
-        BeaconProxy proxy = new BeaconProxy(address(upgradableBeacon), "");
-        avsOperators[_id] = AvsOperator(address(proxy));
-        avsOperators[_id].initialize(address(this));
-
-        emit CreatedAvsOperator(_id, address(avsOperators[_id]));
-
-        return _id;
-    }
-
-    function upgradeAvsOperator(address _newImplementation) external onlyOwner {
-        upgradableBeacon.upgradeTo(_newImplementation);
-    }
-
     //--------------------------------------------------------------------------------------
     //---------------------------------  Eigenlayer Core  ----------------------------------
     //--------------------------------------------------------------------------------------
@@ -112,34 +96,6 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
         avsOperators[_id].updateOperatorMetadataURI(delegationManager, _metadataURI);
 
         emit UpdatedOperatorMetadataURI(_id, _metadataURI);
-    }
-
-    //--------------------------------------------------------------------------------------
-    //--------------------------------------  Admin  ---------------------------------------
-    //--------------------------------------------------------------------------------------
-
-    // specify which calls an node runner can make against which target contracts through the operator contract
-    function updateAllowedOperatorCalls(uint256 _operatorId, address _target, bytes4 _selector, bool _allowed)
-        external
-        onlyAdmin
-    {
-        allowedOperatorCalls[_operatorId][_target][_selector] = _allowed;
-        emit AllowedOperatorCallsUpdated(_operatorId, _target, _selector, _allowed);
-    }
-
-    function updateAvsNodeRunner(uint256 _id, address _avsNodeRunner) external onlyAdmin {
-        avsOperators[_id].updateAvsNodeRunner(_avsNodeRunner);
-        emit UpdatedAvsNodeRunner(_id, _avsNodeRunner);
-    }
-
-    function updateEcdsaSigner(uint256 _id, address _ecdsaSigner) external onlyAdmin {
-        avsOperators[_id].updateEcdsaSigner(_ecdsaSigner);
-        emit UpdatedEcdsaSigner(_id, _ecdsaSigner);
-    }
-
-    function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
-        admins[_address] = _isAdmin;
-        emit AdminUpdated(_address, _isAdmin);
     }
 
     //--------------------------------------------------------------------------------------
@@ -195,18 +151,54 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
     }
 
     //--------------------------------------------------------------------------------------
-    //-------------------------------  View Functions  -------------------------------------
+    //--------------------------------------  Admin  ---------------------------------------
     //--------------------------------------------------------------------------------------
 
-    function calculateOperatorAVSRegistrationDigestHash(
-        uint256 _id,
-        address _avsServiceManager,
-        bytes32 _salt,
-        uint256 _expiry
-    ) external view returns (bytes32) {
-        address _operator = address(avsOperators[_id]);
-        return avsDirectory.calculateOperatorAVSRegistrationDigestHash(_operator, _avsServiceManager, _salt, _expiry);
+    // specify which calls an node runner can make against which target contracts through the operator contract
+    function updateAllowedOperatorCalls(uint256 _operatorId, address _target, bytes4 _selector, bool _allowed)
+        external
+        onlyAdmin
+    {
+        allowedOperatorCalls[_operatorId][_target][_selector] = _allowed;
+        emit AllowedOperatorCallsUpdated(_operatorId, _target, _selector, _allowed);
     }
+
+    function updateAdmin(address _address, bool _isAdmin) external onlyOwner {
+        admins[_address] = _isAdmin;
+        emit AdminUpdated(_address, _isAdmin);
+    }
+
+    function updateAvsNodeRunner(uint256 _id, address _avsNodeRunner) external onlyAdmin {
+        avsOperators[_id].updateAvsNodeRunner(_avsNodeRunner);
+        emit UpdatedAvsNodeRunner(_id, _avsNodeRunner);
+    }
+
+    function updateEcdsaSigner(uint256 _id, address _ecdsaSigner) external onlyAdmin {
+        avsOperators[_id].updateEcdsaSigner(_ecdsaSigner);
+        emit UpdatedEcdsaSigner(_id, _ecdsaSigner);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function upgradeAvsOperator(address _newImplementation) public onlyOwner {
+        upgradableBeacon.upgradeTo(_newImplementation);
+    }
+
+    function createAvsOperator() external onlyOwner returns (uint256 _id) {
+        _id = nextAvsOperatorId++;
+
+        BeaconProxy proxy = new BeaconProxy(address(upgradableBeacon), "");
+        avsOperators[_id] = AvsOperator(address(proxy));
+        avsOperators[_id].initialize(address(this));
+
+        emit CreatedAvsOperator(_id, address(avsOperators[_id]));
+
+        return _id;
+    }
+
+    //--------------------------------------------------------------------------------------
+    //-------------------------------  View Functions  -------------------------------------
+    //--------------------------------------------------------------------------------------
 
     function avsOperatorStatus(uint256 _id, address _avsServiceManager)
         external
@@ -237,7 +229,23 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
         return avsOperators[_id].getAvsInfo(_avsRegistryCoordinator);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    function calculateOperatorAVSRegistrationDigestHash(
+        uint256 _id,
+        address _avsServiceManager,
+        bytes32 _salt,
+        uint256 _expiry
+    ) external view returns (bytes32) {
+        address _operator = address(avsOperators[_id]);
+        return avsDirectory.calculateOperatorAVSRegistrationDigestHash(_operator, _avsServiceManager, _salt, _expiry);
+    }
+
+    //--------------------------------------------------------------------------------------
+    //------------------------------------  Modifiers  -------------------------------------
+    //--------------------------------------------------------------------------------------
+
+    function _onlyAdmin() internal view {
+        if (!admins[msg.sender] && msg.sender != owner()) revert NotAdmin();
+    }
 
     function _onlyOperator(uint256 _id) internal view {
         if (msg.sender != avsOperators[_id].avsNodeRunner() && !admins[msg.sender] && msg.sender != owner()) {
@@ -245,17 +253,13 @@ contract AvsOperatorsManager is Initializable, OwnableUpgradeable, PausableUpgra
         }
     }
 
-    modifier onlyOperator(uint256 _id) {
-        _onlyOperator(_id);
+    modifier onlyAdmin() {
+        _onlyAdmin();
         _;
     }
 
-    function _onlyAdmin() internal view {
-        if (!admins[msg.sender] && msg.sender != owner()) revert NotAdmin();
-    }
-
-    modifier onlyAdmin() {
-        _onlyAdmin();
+    modifier onlyOperator(uint256 _id) {
+        _onlyOperator(_id);
         _;
     }
 }
